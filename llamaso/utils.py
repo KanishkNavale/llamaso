@@ -1,7 +1,20 @@
 import json
-from typing import Dict, List
+from typing import Dict, List, Optional, Type
 
 from llama_cpp import Llama
+from llama_cpp.llama_grammar import LlamaGrammar
+from pydantic import BaseModel
+
+
+def compile_schema_grammar(
+    schema: Type[BaseModel],
+) -> Optional[LlamaGrammar]:
+    valid_schema: Optional[str] = None
+
+    if issubclass(schema, BaseModel):
+        valid_schema = json.dumps(schema.model_json_schema(), indent=2)
+
+    return LlamaGrammar.from_json_schema(valid_schema) if valid_schema else None
 
 
 def trim_contexts(

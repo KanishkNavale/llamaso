@@ -1,12 +1,10 @@
-import json
 from typing import Dict, List, Optional, Type, Union
 
 import json_repair as jr
 from llama_cpp import Llama
-from llama_cpp.llama_grammar import LlamaGrammar
 from pydantic import BaseModel
 
-from llamaso.utils import trim_contexts
+from llamaso.utils import compile_schema_grammar, trim_contexts
 
 
 class InferencingModel:
@@ -52,24 +50,13 @@ class InferencingModel:
         )
         self._messages.append(message)
 
-    def _compile_schema_grammar(
-        self,
-        schema: Type[BaseModel],
-    ) -> Optional[LlamaGrammar]:
-        valid_schema: Optional[str] = None
-
-        if issubclass(schema, BaseModel):
-            valid_schema = json.dumps(schema.model_json_schema(), indent=2)
-
-        return LlamaGrammar.from_json_schema(valid_schema) if valid_schema else None
-
     def infer(
         self, prompt: str, schema: Optional[Type[BaseModel]]
     ) -> Union[str, BaseModel]:
         self._add_message({"role": "user", "content": prompt})
 
         if schema:
-            schema_grammar = self._compile_schema_grammar(schema=schema)
+            schema_grammar = compile_schema_grammar(schema=schema)
 
         llm_response = self.model.create_chat_completion(  # type: ignore
             messages=self._messages,  # type: ignore
@@ -77,7 +64,6 @@ class InferencingModel:
         )["choices"][0]["message"]
 
         self._add_message(llm_response)  # type: ignore
-
         content = llm_response["content"]
 
         if not isinstance(content, str):
