@@ -163,3 +163,5 @@ cython_debug/
 
 # Model cache dir
 .models/
+
+.ruff_cache/
